@@ -1,0 +1,197 @@
+group 'org.sharedhealth.mci'
+
+apply plugin: 'java'
+apply plugin: 'rpm'
+apply plugin: 'idea'
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+
+def mainClassName = "org.sharedhealth.mci.launch.Main"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs "${rootDir}/lib"
+    }
+}
+
+jar {
+    baseName = 'mci-background-jobs'
+    manifest {
+        attributes('Main-Class': mainClassName)
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+ext.libraries = [
+        apache_log4j_core           : "org.apache.logging.log4j:log4j-core:2.6.2",
+        cassandra_driver_core       : "com.datastax.cassandra:cassandra-driver-core:3.0.3",
+        cassandra_driver_mapping    : "com.datastax.cassandra:cassandra-driver-mapping:3.0.3",
+        cassandra_all               : "org.apache.cassandra:cassandra-all:2.1.0",
+]
+
+ext.testLibraries = [
+        junit                       : "junit:junit:4.12",
+        mockito                     : "org.mockito:mockito-all:1.10.19",
+        mutagen                     : "com.toddfast.mutagen:mutagen:0.3.0",
+        mutagen_cassandra           : "com.toddfast.mutagen:mutagen-cassandra-0.4.2-SNAPSHOT",
+        cassandra_unit              : "org.cassandraunit:cassandra-unit:2.0.2.2",
+        system_rules                : "com.github.stefanbirkner:system-rules:1.16.0",
+]
+
+dependencies {
+    compile libraries.values()
+    testCompile testLibraries.values()
+}
+
+configurations {
+    migration {
+        extendsFrom compile
+    }
+    all*.exclude group: 'org.slf4j', module: "log4j-over-slf4j"
+    all*.exclude group: 'ch.qos.logback', module: "logback-classic"
+    all*.exclude group: 'ch.qos.logback', module: "logback-core"
+}
+
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}
+
+checkstyle {
+    configFile rootProject.file('config/checkstyle/checkstyle.xml')
+}
+
+pmd {
+    toolVersion = '5.0.5'
+    ruleSetFiles = files("${project.projectDir}/config/pmd/rulesets.xml")
+}
+
+def exportEnvironmentVariablesToXML(defaults) {
+    defaults.remove(defaults.envs)
+    Properties environmentVariables = new Properties();
+    environmentVariables.load(new FileInputStream(new File('env/local.properties')))
+    defaults.append new NodeBuilder().envs() {
+        environmentVariables.each { prop, value ->
+            env(name: prop, value: value)
+        }
+    }
+}
+
+def localEnv = new Properties();
+localEnv.load(new FileInputStream(new File('src/test/resources/test.properties')))
+
+//build artifact
+private Properties loadConfig() {
+    Properties properties = new Properties()
+    properties.load(new FileInputStream(new File('env/local.properties')));
+    properties
+}
+
+task assembly(dependsOn: 'build') << {
+    new File("${buildDir}/etc/").mkdir();
+}
+
+
+task exportProperties(dependsOn: 'assembly') << {
+    PrintStream output = new PrintStream(new FileOutputStream(file("${buildDir}/etc/mci-background-jobs")));
+    Properties properties = loadConfig()
+    properties.each { prop, val ->
+        output.println("export " + prop + "=" + val)
+    }
+}
+
+task dist(dependsOn: 'exportProperties', type: Rpm) {
+    packageName = 'mci-background-jobs'
+    version = '1.0'
+    release = project.hasProperty('release') ? project.release : '1'
+    arch = NOARCH
+    os = LINUX
+
+    into '/opt/mci-background-jobs'
+
+    postInstall = file('scripts/utils/postInstall.sh')
+    preUninstall = file('scripts/utils/preUninstall.sh')
+    postUninstall = file('scripts/utils/postUninstall.sh')
+
+    from("${buildDir}/etc") {
+        fileMode = 0755
+        into 'etc'
+    }
+
+    from("scripts/rpm") {
+        fileMode = 0755
+        exclude 'placeholder'
+        into 'bin'
+    }
+
+    from("${buildDir}/libs") {
+        fileMode = 0755
+        into 'lib'
+    }
+
+    from("scripts/rpm") {
+        fileMode = 0755
+        exclude 'mci-background-jobs'
+        exclude 'start.sh'
+        into 'var'
+    }
+}
+
+test {
+    environment localEnv
+}
+
+task runMCIBG(type: JavaExec) {
+    Properties properties = new Properties();
+    properties.load(new FileInputStream(new File('env/local.properties')))
+    main = mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    environment properties
+}
+
+task debugMCIBG(type: JavaExec) {
+    Properties properties = new Properties();
+    properties.load(new FileInputStream(new File('env/local.properties')))
+    main = mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    environment properties
+    debug = true
+}
+
+idea {
+    workspace {
+        iws.withXml { xmlFile ->
+            def runManager = xmlFile.asNode().component.find { it.@name == 'RunManager' }
+            def junitDefaults = runManager.configuration.find { it.@default == 'true' && it.@type == 'JUnit' }
+            junitDefaults.remove(junitDefaults.envs)
+            junitDefaults.append new NodeBuilder().envs() {
+                env(name: 'PATH_TO_CONFIG', value: "\$PROJECT_DIR\$/env/local.properties")
+            }
+            /*Configuring application runtime parameters*/
+            exportEnvironmentVariablesToXML(runManager.configuration.find {
+                it.@default == 'true' && it.@type == 'Application'
+            });
+        }
+    }
+    project {
+        jdkName = '1.8'
+        languageLevel = '1.8'
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath(
+                'com.netflix.nebula:gradle-ospackage-plugin:2.+'
+        )
+    }
+}
