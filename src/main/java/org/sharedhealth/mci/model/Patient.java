@@ -194,9 +194,6 @@ public class Patient {
     @Column(name = PERMANENT_COUNTRY)
     private String permanentCountryCode;
 
-    @Column(name = FULL_NAME)
-    private String fullName;
-
     @Column(name = STATUS)
     private String status;
 
@@ -468,13 +465,6 @@ public class Patient {
         this.fathersUid = fathersUid;
     }
 
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
 
     public String getFullNameBangla() {
         return fullNameBangla;
@@ -954,7 +944,6 @@ public class Patient {
         if (fathersSurName != null ? !fathersSurName.equals(patient.fathersSurName) : patient.fathersSurName != null)
             return false;
         if (fathersUid != null ? !fathersUid.equals(patient.fathersUid) : patient.fathersUid != null) return false;
-        if (fullName != null ? !fullName.equals(patient.fullName) : patient.fullName != null) return false;
         if (fullNameBangla != null ? !fullNameBangla.equals(patient.fullNameBangla) : patient.fullNameBangla != null)
             return false;
         if (gender != null ? !gender.equals(patient.gender) : patient.gender != null) return false;
@@ -1106,7 +1095,6 @@ public class Patient {
         result = 31 * result + (permanentRuralWardId != null ? permanentRuralWardId.hashCode() : 0);
         result = 31 * result + (permanentCityCorporationId != null ? permanentCityCorporationId.hashCode() : 0);
         result = 31 * result + (permanentCountryCode != null ? permanentCountryCode.hashCode() : 0);
-        result = 31 * result + (fullName != null ? fullName.hashCode() : 0);
         result = 31 * result + (status != null ? status.hashCode() : 0);
         result = 31 * result + (dateOfDeath != null ? dateOfDeath.hashCode() : 0);
         result = 31 * result + (primaryContact != null ? primaryContact.hashCode() : 0);

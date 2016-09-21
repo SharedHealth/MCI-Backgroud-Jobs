@@ -5,27 +5,13 @@ public class Constants {
     public static final String CF_NID_MAPPING = "nid_mapping";
     public static final String CF_BRN_MAPPING = "brn_mapping";
     public static final String CF_UID_MAPPING = "uid_mapping";
-    public static final String CF_HOUSEHOLD_CODE_MAPPING = "household_code_mapping";
-    public static final String CF_PHONE_NUMBER_MAPPING = "phone_number_mapping";
     public static final String CF_NAME_MAPPING = "name_mapping";
-    public static final String CF_PENDING_APPROVAL_MAPPING = "pending_approval_mapping";
-    public static final String CF_CATCHMENT_MAPPING = "catchment_mapping";
     public static final String CF_PATIENT_UPDATE_LOG = "patient_update_log";
-    public static final String CF_APPROVAL_FIELDS = "approval_fields";
-    public static final String CF_PATIENT_AUDIT_LOG = "patient_audit_log";
-    public static final String CF_LOCATIONS = "locations";
     public static final String CF_MARKER = "marker";
     public static final String CF_PATIENT_DUPLICATE = "patient_duplicate";
-    public static final String CF_PATIENT_DUPLICATE_IGNORED = "patient_duplicate_ignored";
-    public static final String CF_MCI_HEALTH_ID = "mci_healthId";
-    public static final String CF_GENERATED_HID_RANGE = "generated_hid_range";
-    public static final String CF_GENERATED_HID_BLOCKS = "generated_hid_blocks";
-    public static final String CF_ORG_HEALTH_ID = "org_healthid";
-    public static final String CF_FAILED_EVENTS = "failed_events";
 
     public static final String HEALTH_ID = "health_id";
     public static final String ASSIGNED_BY = "assigned_by";
-    public static final String LAST_UPDATED = "last_updated";
     public static final String NATIONAL_ID = "national_id";
     public static final String FULL_NAME_BANGLA = "full_name_bangla";
     public static final String GIVEN_NAME = "given_name";
@@ -57,10 +43,6 @@ public class Constants {
     public static final String MOTHERS_BRN = "mothers_brn";
     public static final String PLACE_OF_BIRTH = "place_of_birth";
     public static final String MARITAL_STATUS = "marital_status";
-    public static final String MARRIAGE_ID = "marriage_id";
-    public static final String SPOUSE_NAME_BANGLA = "spouse_name_bangla";
-    public static final String SPOUSE_NAME = "spouse_name";
-    public static final String SPOUSE_UID_NID = "spouse_uid_nid";
     public static final String CONFIDENTIAL = "confidential";
     public static final String ACTIVE = "active";
     public static final String MERGED_WITH = "merged_with";
@@ -121,31 +103,12 @@ public class Constants {
     public static final String EVENT_TYPE = "event_type";
     public static final String EVENT_TYPE_CREATED = "created";
     public static final String EVENT_TYPE_UPDATED = "updated";
-    public static final String SERIES_NO = "series_no";
-    public static final String GENERATED_FOR = "generated_for";
-    public static final String GENERATED_AT = "generated_at";
-    public static final String BEGINS_AT = "begins_at";
-    public static final String ENDS_AT = "ends_at";
-    public static final String TOTAL_HIDS = "total_hids";
-    public static final String FAILURE_TYPE = "failure_type";
-    public static final String FAILURE_TYPE_SEARCH_MAPPING = "search_mapping_failure";
-    public static final String ERROR_MESSAGE = "error_message";
-    public static final String FAILED_AT = "failed_at";
-    public static final String RETRIES = "retries";
-    public static final String ALLOCATED_FOR = "allocated_for";
-    public static final String IS_USED = "is_used";
-    public static final String USED_AT = "used_at";
 
     public static final String HEALTH_ID1 = "health_id1";
     public static final String HEALTH_ID2 = "health_id2";
     public static final String REASONS = "reasons";
 
-    public static final String HID = "hid";
-    public static final String RESERVED_FOR = "reserved_for";
     public static final String DUPLICATE_PATIENT_MARKER = "duplicate_patient_marker";
-
-    public static final String AUDIT_MARKER_TYPE = "audit_marker";
-    public static final String SEARCH_MAPPING_MARKER_TYPE = "search_mapping_marker";
 
     //json constants
     public static final String OLD_VALUE = "old_value";

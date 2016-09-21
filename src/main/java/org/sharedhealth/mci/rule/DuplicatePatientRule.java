@@ -1,14 +1,13 @@
 package org.sharedhealth.mci.rule;
 
 
-import org.sharedhealth.mci.mapper.DuplicatePatientMapper;
+import org.sharedhealth.mci.model.Catchment;
 import org.sharedhealth.mci.model.DuplicatePatient;
 import org.sharedhealth.mci.model.Patient;
 import org.sharedhealth.mci.repository.PatientRepository;
+import org.sharedhealth.mci.util.TimeUuidUtil;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 
@@ -20,12 +19,9 @@ public abstract class DuplicatePatientRule {
     public static final String DUPLICATE_REASON_NAME_ADDRESS = "DUPLICATE_REASON_NAME_ADDRESS";
 
     protected PatientRepository patientRepository;
-    private DuplicatePatientMapper duplicatePatientMapper;
 
-    protected DuplicatePatientRule(PatientRepository patientRepository,
-                                   DuplicatePatientMapper duplicatePatientMapper) {
+    protected DuplicatePatientRule(PatientRepository patientRepository) {
         this.patientRepository = patientRepository;
-        this.duplicatePatientMapper = duplicatePatientMapper;
     }
 
     public void apply(String healthId, List<DuplicatePatient> duplicates) {
@@ -60,9 +56,30 @@ public abstract class DuplicatePatientRule {
             } else {
                 Patient patient2 = patientRepository.findByHealthId(healthId);
                 HashSet<String> reasons = new HashSet<>(asList(reason));
-                List<DuplicatePatient> duplicatesWithRule = duplicatePatientMapper.mapToDuplicatePatientData(patient1, patient2, reasons);
+                List<DuplicatePatient> duplicatesWithRule = mapToDuplicatePatientData(patient1, patient2, reasons);
                 duplicates.addAll(duplicatesWithRule);
             }
+        }
+    }
+
+    private List<DuplicatePatient> mapToDuplicatePatientData(Patient patient1, Patient patient2, Set<String> reasons) {
+        List<DuplicatePatient> duplicates = new ArrayList<>();
+        Catchment catchment1 = patient1.getCatchment();
+        Catchment catchment2 = patient2.getCatchment();
+        if (catchment1.equals(catchment2)) {
+            buildDuplicates(catchment1, patient1.getHealthId(), patient2.getHealthId(), reasons, duplicates);
+        } else {
+            buildDuplicates(catchment1, patient1.getHealthId(), patient2.getHealthId(), reasons, duplicates);
+            buildDuplicates(catchment2, patient2.getHealthId(), patient1.getHealthId(), reasons, duplicates);
+        }
+        return duplicates;
+    }
+
+    private void buildDuplicates(Catchment catchment, String healthId1, String healthId2, Set<String> reasons,
+                                 List<DuplicatePatient> duplicates) {
+        for (String catchmentId : catchment.getAllIds()) {
+            DuplicatePatient duplicate = new DuplicatePatient(catchmentId, healthId1, healthId2, reasons, TimeUuidUtil.uuidForDate(new Date()));
+            duplicates.add(duplicate);
         }
     }
 }

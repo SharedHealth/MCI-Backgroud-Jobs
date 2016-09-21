@@ -1,7 +1,6 @@
 package org.sharedhealth.mci.rule;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sharedhealth.mci.mapper.DuplicatePatientMapper;
 import org.sharedhealth.mci.model.Patient;
 import org.sharedhealth.mci.repository.PatientRepository;
 
@@ -15,8 +14,8 @@ public class DuplicatePatientBrnRule extends DuplicatePatientRule {
 
     private final String reason;
 
-    public DuplicatePatientBrnRule(PatientRepository patientRepository, DuplicatePatientMapper duplicatePatientMapper) {
-        super(patientRepository, duplicatePatientMapper);
+    public DuplicatePatientBrnRule(PatientRepository patientRepository) {
+        super(patientRepository);
         this.reason = DUPLICATE_REASON_BRN;
     }
 

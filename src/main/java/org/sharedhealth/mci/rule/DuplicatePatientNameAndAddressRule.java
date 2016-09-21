@@ -1,7 +1,6 @@
 package org.sharedhealth.mci.rule;
 
 
-import org.sharedhealth.mci.mapper.DuplicatePatientMapper;
 import org.sharedhealth.mci.model.Patient;
 import org.sharedhealth.mci.repository.PatientRepository;
 
@@ -11,8 +10,8 @@ public class DuplicatePatientNameAndAddressRule extends DuplicatePatientRule {
 
     private final String reason;
 
-    public DuplicatePatientNameAndAddressRule(PatientRepository patientRepository, DuplicatePatientMapper duplicatePatientMapper) {
-        super(patientRepository, duplicatePatientMapper);
+    public DuplicatePatientNameAndAddressRule(PatientRepository patientRepository) {
+        super(patientRepository);
         this.reason = DUPLICATE_REASON_NAME_ADDRESS;
     }
 

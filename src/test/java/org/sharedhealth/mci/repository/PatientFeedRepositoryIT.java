@@ -2,11 +2,13 @@ package org.sharedhealth.mci.repository;
 
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sharedhealth.mci.BaseIntegrationTest;
 import org.sharedhealth.mci.config.MCICassandraConfig;
 import org.sharedhealth.mci.model.PatientUpdateLog;
+import org.sharedhealth.mci.util.TestUtils;
 import org.sharedhealth.mci.util.TimeUuidUtil;
 
 import java.util.Date;
@@ -29,6 +31,11 @@ public class PatientFeedRepositoryIT extends BaseIntegrationTest {
         MappingManager mappingManager = MCICassandraConfig.getInstance().getMappingManager();
         feedRepository = new PatientFeedRepository(mappingManager);
         updateLogMapper = mappingManager.mapper(PatientUpdateLog.class);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        TestUtils.truncateAllColumnFamilies();
     }
 
     @Test
