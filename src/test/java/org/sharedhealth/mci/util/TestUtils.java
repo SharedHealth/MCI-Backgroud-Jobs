@@ -22,7 +22,11 @@ public class TestUtils {
                 Constants.CF_PATIENT,
                 Constants.CF_PATIENT_DUPLICATE,
                 Constants.CF_PATIENT_DUPLICATE_IGNORED,
-                Constants.CF_PATIENT_UPDATE_LOG
+                Constants.CF_PATIENT_UPDATE_LOG,
+                Constants.CF_NID_MAPPING,
+                Constants.CF_UID_MAPPING,
+                Constants.CF_BRN_MAPPING,
+                Constants.CF_NAME_MAPPING
         );
     }
 

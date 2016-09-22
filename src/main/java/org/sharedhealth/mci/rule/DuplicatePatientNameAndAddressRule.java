@@ -16,7 +16,7 @@ public class DuplicatePatientNameAndAddressRule extends DuplicatePatientRule {
     }
 
     @Override
-    protected List<Patient> buildSearchQuery(Patient patient) {
+    protected List<Patient> findMatchingPatients(Patient patient) {
         return patientRepository.findAllByNameAndAddress(patient.getGivenName(), patient.getSurName(),
                 patient.getDivisionId(), patient.getDistrictId(), patient.getUpazilaId());
     }

@@ -20,7 +20,7 @@ public class DuplicatePatientNidRule extends DuplicatePatientRule {
     }
 
     @Override
-    protected List<Patient> buildSearchQuery(Patient patient) {
+    protected List<Patient> findMatchingPatients(Patient patient) {
         String nationalId = patient.getNationalId();
         if (StringUtils.isBlank(nationalId)) return new ArrayList<>();
         return patientRepository.findAllByQuery(NATIONAL_ID, nationalId, CF_NID_MAPPING);

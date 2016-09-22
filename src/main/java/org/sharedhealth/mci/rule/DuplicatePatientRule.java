@@ -26,16 +26,16 @@ public abstract class DuplicatePatientRule {
 
     public void apply(String healthId, List<DuplicatePatient> duplicates) {
         Patient patient = patientRepository.findByHealthId(healthId);
-        List<Patient> patients = buildSearchQuery(patient);
-        List<String> healthIds = findDuplicatesBySearchQuery(healthId, patients);
+        List<Patient> patients = findMatchingPatients(patient);
+        List<String> healthIds = extractHealthIdsForDuplicates(healthId, patients);
         buildDuplicates(patient, healthIds, getReason(), duplicates);
     }
 
-    protected abstract List<Patient> buildSearchQuery(Patient patient);
+    protected abstract List<Patient> findMatchingPatients(Patient patient);
 
     protected abstract String getReason();
 
-    protected List<String> findDuplicatesBySearchQuery(String healthId, List<Patient> duplicatePatients) {
+    protected List<String> extractHealthIdsForDuplicates(String healthId, List<Patient> duplicatePatients) {
         List<String> duplicateHealthIds = new ArrayList<>();
         duplicatePatients.forEach(patient -> {
             if (!healthId.equals(patient.getHealthId()) && patient.isActive()) {
@@ -48,11 +48,11 @@ public abstract class DuplicatePatientRule {
     protected void buildDuplicates(final Patient patient1, List<String> healthIds, String reason,
                                    List<DuplicatePatient> duplicates) {
         for (final String healthId : healthIds) {
-            DuplicatePatient duplicate = duplicates.stream().filter(d -> patient1.getHealthId().equals(d.getHealthId1())
-                    && healthId.equals(d.getHealthId2())).findFirst().get();
+            Optional<DuplicatePatient> optional = duplicates.stream().filter(d -> patient1.getHealthId().equals(d.getHealthId1())
+                    && healthId.equals(d.getHealthId2())).findFirst();
 
-            if (duplicate != null) {
-                duplicate.addReason(reason);
+            if (optional.isPresent()) {
+                optional.get().addReason(reason);
             } else {
                 Patient patient2 = patientRepository.findByHealthId(healthId);
                 HashSet<String> reasons = new HashSet<>(asList(reason));

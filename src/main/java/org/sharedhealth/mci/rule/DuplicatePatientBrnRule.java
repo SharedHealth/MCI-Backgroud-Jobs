@@ -20,7 +20,7 @@ public class DuplicatePatientBrnRule extends DuplicatePatientRule {
     }
 
     @Override
-    protected List<Patient> buildSearchQuery(Patient patient) {
+    protected List<Patient> findMatchingPatients(Patient patient) {
         String brn = patient.getBirthRegistrationNumber();
         if (StringUtils.isBlank(brn)) return new ArrayList<>();
         return patientRepository.findAllByQuery(BIN_BRN, brn, CF_BRN_MAPPING);

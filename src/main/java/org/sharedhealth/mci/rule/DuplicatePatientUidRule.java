@@ -20,7 +20,7 @@ public class DuplicatePatientUidRule extends DuplicatePatientRule {
     }
 
     @Override
-    protected List<Patient> buildSearchQuery(Patient patient) {
+    protected List<Patient> findMatchingPatients(Patient patient) {
         String uid = patient.getUid();
         if (StringUtils.isBlank(uid)) return new ArrayList<>();
         return patientRepository.findAllByQuery(UID, uid, CF_UID_MAPPING);

@@ -62,7 +62,6 @@ public class PatientFeedRepositoryIT extends BaseIntegrationTest {
         log = feedRepository.findPatientUpdateLog(eventId2);
         assertEquals(log.getEventId(), updateLog3.getEventId());
         assertEquals(log.getHealthId(), updateLog3.getHealthId());
-
     }
 
     private PatientUpdateLog buildPatientUpdateLog(UUID eventId1, String eventType) {

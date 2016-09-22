@@ -11,7 +11,7 @@ public class DuplicatePatientRuleEngine {
     private List<DuplicatePatientRule> rules;
 
     public DuplicatePatientRuleEngine(List<DuplicatePatientRule> rules) {
-        this.rules = rules;
+        this.rules = new ArrayList<>(rules);
     }
 
     public List<DuplicatePatient> apply(String healthId) {
