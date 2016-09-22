@@ -9,6 +9,7 @@ public class Constants {
     public static final String CF_PATIENT_UPDATE_LOG = "patient_update_log";
     public static final String CF_MARKER = "marker";
     public static final String CF_PATIENT_DUPLICATE = "patient_duplicate";
+    public static final String CF_PATIENT_DUPLICATE_IGNORED = "patient_duplicate_ignored";
 
     public static final String HEALTH_ID = "health_id";
     public static final String ASSIGNED_BY = "assigned_by";
@@ -74,7 +75,6 @@ public class Constants {
     public static final String PERMANENT_RURAL_WARD_ID = "permanent_rural_ward_id";
     public static final String PERMANENT_CITY_CORPORATION = "permanent_city_corporation_id";
     public static final String PERMANENT_COUNTRY = "permanent_country_code";
-    public static final String FULL_NAME = "full_name";
     public static final String STATUS = "status";
     public static final String DATE_OF_DEATH = "date_of_death";
     public static final String RELATIONS = "relations";

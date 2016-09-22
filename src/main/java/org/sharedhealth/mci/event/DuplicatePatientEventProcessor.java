@@ -35,9 +35,7 @@ public abstract class DuplicatePatientEventProcessor {
         for (DuplicatePatient duplicatepatient : duplicates) {
             List<DuplicatePatient> persistentEntries = duplicatePatientRepository.findByCatchmentAndHealthId(new Catchment(formatCatchmentId(duplicatepatient.getCatchmentId())), duplicatepatient.getHealthId2());
             persistentEntries.addAll(duplicatePatientRepository.findByCatchmentAndHealthId(new Catchment(formatCatchmentId(duplicatepatient.getCatchmentId())), duplicatepatient.getHealthId1()));
-            persistentEntries.stream().filter(persistentEntry -> isSameEntry(persistentEntry, duplicatepatient)).forEach(persistentEntry -> {
-                filteredList.remove(duplicatepatient);
-            });
+            persistentEntries.stream().filter(persistentEntry -> isSameEntry(persistentEntry, duplicatepatient)).forEach(persistentEntry -> filteredList.remove(duplicatepatient));
         }
         return filteredList;
     }

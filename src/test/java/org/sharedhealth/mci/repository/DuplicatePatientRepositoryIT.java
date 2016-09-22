@@ -11,14 +11,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sharedhealth.mci.BaseIntegrationTest;
 import org.sharedhealth.mci.config.MCICassandraConfig;
-import org.sharedhealth.mci.model.Catchment;
-import org.sharedhealth.mci.model.DuplicatePatient;
-import org.sharedhealth.mci.model.Marker;
-import org.sharedhealth.mci.model.Patient;
+import org.sharedhealth.mci.model.*;
 import org.sharedhealth.mci.util.TestUtils;
-import org.sharedhealth.mci.util.TimeUuidUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
@@ -26,11 +23,13 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.*;
 import static org.sharedhealth.mci.util.Constants.*;
+import static org.sharedhealth.mci.util.TimeUuidUtil.uuidForDate;
 
 public class DuplicatePatientRepositoryIT extends BaseIntegrationTest {
     private Mapper<DuplicatePatient> duplicatePatientMapper;
     private Mapper<Patient> patientMapper;
     private Mapper<Marker> markerMapper;
+    private Mapper<DuplicatePatientIgnored> patientIgnoredMapper;
     private DuplicatePatientRepository duplicatePatientRepository;
     private MappingManager mappingManager;
 
@@ -40,12 +39,32 @@ public class DuplicatePatientRepositoryIT extends BaseIntegrationTest {
         duplicatePatientMapper = mappingManager.mapper(DuplicatePatient.class);
         patientMapper = mappingManager.mapper(Patient.class);
         markerMapper = mappingManager.mapper(Marker.class);
-        duplicatePatientRepository = new DuplicatePatientRepository(mappingManager);
+        patientIgnoredMapper = mappingManager.mapper(DuplicatePatientIgnored.class);
+        duplicatePatientRepository = new DuplicatePatientRepository(mappingManager, new PatientRepository(mappingManager));
     }
 
     @After
     public void tearDown() throws Exception {
         TestUtils.truncateAllColumnFamilies();
+    }
+
+    @Test
+    public void shouldFindDuplicatesByCatchmentAndHID() {
+        Catchment catchment = new Catchment("192939");
+        String healthId1 = "111";
+        String healthId2 = "110";
+        String healthId3 = "101";
+        Set<String> reasons = new HashSet<>(asList("nid"));
+
+        createDuplicatesForPatient(healthId1, healthId2, catchment, reasons);
+        createDuplicatesForPatient(healthId1, healthId3, catchment, reasons);
+        List<DuplicatePatient> duplicatePatients = duplicatePatientRepository.findByCatchmentAndHealthId(catchment, healthId1);
+
+        assertEquals(4, duplicatePatients.size());
+        for (String catchmentId : catchment.getAllIds()) {
+            assertTrue(duplicateExist(duplicatePatients, healthId1, healthId2, catchmentId));
+            assertTrue(duplicateExist(duplicatePatients, healthId1, healthId3, catchmentId));
+        }
     }
 
     @Test
@@ -55,7 +74,7 @@ public class DuplicatePatientRepositoryIT extends BaseIntegrationTest {
         String healthId2 = "110";
         Set<String> reasons = new HashSet<>(asList("nid"));
 
-        UUID createdAt = TimeUuidUtil.uuidForDate(new Date());
+        UUID createdAt = uuidForDate(new Date());
         UUID marker = randomUUID();
 
         DuplicatePatient duplicate = new DuplicatePatient(catchment.getId(), healthId1, healthId2, reasons, createdAt);
@@ -111,13 +130,60 @@ public class DuplicatePatientRepositoryIT extends BaseIntegrationTest {
         assertMarker(retireMarker.toString());
     }
 
-    private void createDuplicatesForPatient(String healthId1, String healthId2, Catchment catchment, Set<String> reasons) {
-        for (String catchmentId : catchment.getAllIds()) {
-            DuplicatePatient duplicatePatient = new DuplicatePatient(catchmentId, healthId1, healthId2, reasons, TimeUuidUtil.uuidForDate(new Date()));
-            duplicatePatientMapper.save(duplicatePatient);
+    @Test
+    public void shouldUpdatePatientAndUpdateMarker() {
+        String healthId1 = "h001";
+        String healthId2 = "h002";
+        String healthId3 = "h003";
+        String healthId4 = "h004";
+        Patient patient1 = buildPatient(healthId1, "10", "11", "12");
+        Patient patient2 = buildPatient(healthId2, "20", "21", "22");
+        Patient patient3 = buildPatient(healthId3, "30", "31", "32");
+        Patient patient4 = buildPatient(healthId4, "40", "41", "42");
+        patientMapper.save(patient1);
+        patientMapper.save(patient2);
+        patientMapper.save(patient3);
+        patientMapper.save(patient4);
+        Set<String> reasons = new HashSet<>(asList("nid"));
+
+        createDuplicatesForPatient(healthId1, healthId2, patient1.getCatchment(), reasons);
+        createDuplicatesForPatient(healthId2, healthId1, patient2.getCatchment(), reasons);
+
+        UUID createMarker = randomUUID();
+        saveMarker(createMarker);
+
+        patientIgnoredMapper.save(new DuplicatePatientIgnored(healthId1, healthId4, reasons));
+        patientIgnoredMapper.save(new DuplicatePatientIgnored(healthId4, healthId1, reasons));
+
+        UUID updateMarker = randomUUID();
+
+        List<DuplicatePatient> updatedDuplicates = new ArrayList<>();
+        updatedDuplicates.addAll(buildDuplicate(patient1.getCatchment(), healthId1, healthId3, reasons));
+        updatedDuplicates.addAll(buildDuplicate(patient3.getCatchment(), healthId3, healthId1, reasons));
+        updatedDuplicates.addAll(buildDuplicate(patient1.getCatchment(), healthId1, healthId4, reasons));
+        updatedDuplicates.addAll(buildDuplicate(patient4.getCatchment(), healthId4, healthId1, reasons));
+
+        duplicatePatientRepository.update(healthId1, new Catchment("101112"), updatedDuplicates, updateMarker);
+
+        List<DuplicatePatient> duplicates = findAllDuplicates();
+        assertEquals(4, duplicates.size());
+        for (String catchmentId : patient1.getCatchment().getAllIds()) {
+            assertTrue(duplicateExist(duplicates, healthId1, healthId3, catchmentId));
         }
+        for (String catchmentId : patient3.getCatchment().getAllIds()) {
+            assertTrue(duplicateExist(duplicates, healthId3, healthId1, catchmentId));
+        }
+        assertMarker(updateMarker.toString());
     }
 
+    private List<DuplicatePatient> buildDuplicate(Catchment catchment, String healthId1, String healthId2, Set<String> reasons) {
+        return catchment.getAllIds().stream().map(catchmentId -> new DuplicatePatient(catchmentId, healthId1, healthId2, reasons, uuidForDate(new Date())))
+                .collect(Collectors.toList());
+    }
+
+    private void createDuplicatesForPatient(String healthId1, String healthId2, Catchment catchment, Set<String> reasons) {
+        catchment.getAllIds().forEach(catchmentId -> duplicatePatientMapper.save(new DuplicatePatient(catchmentId, healthId1, healthId2, reasons, uuidForDate(new Date()))));
+    }
 
     private boolean duplicateExist(List<DuplicatePatient> duplicatePatients, String healthId1, String healthId2, String catchmentId) {
         return duplicatePatients.stream().anyMatch(patient -> patient.getHealthId1().equals(healthId1) &&
@@ -146,49 +212,12 @@ public class DuplicatePatientRepositoryIT extends BaseIntegrationTest {
         return map.all();
     }
 
+
     private void saveMarker(UUID marker) {
         Marker markerToSave = new Marker();
         markerToSave.setType(DUPLICATE_PATIENT_MARKER);
         markerToSave.setValue(marker.toString());
-        markerToSave.setCreatedAt(TimeUuidUtil.uuidForDate(new Date()));
+        markerToSave.setCreatedAt(uuidForDate(new Date()));
         markerMapper.save(markerToSave);
     }
-
-
-//
-//    @Test
-//    public void shouldUpdatePatientAndUpdateMarker() {
-//        PatientData patient1 = buildPatient("h001", new Address("10", "11", "12"));
-//        String healthId1 = patientRepository.create(patient1).getId();
-//        PatientData patient2 = buildPatient("h002", new Address("20", "21", "22"));
-//        String healthId2 = patientRepository.create(patient2).getId();
-//        PatientData patient3 = buildPatient("h003", new Address("30", "31", "32"));
-//        String healthId3 = patientRepository.create(patient3).getId();
-//        PatientData patient4 = buildPatient("h004", new Address("40", "41", "42"));
-//        String healthId4 = patientRepository.create(patient4).getId();
-//        Set<String> reasons = asSet("nid");
-//
-//        duplicatePatientRepository.create(asList(
-//                        new DuplicatePatient(patient1.getCatchment().getId(), healthId1, healthId2, reasons, TimeUuidUtil.uuidForDate(new Date())),
-//                        new DuplicatePatient(patient2.getCatchment().getId(), healthId2, healthId1, reasons, TimeUuidUtil.uuidForDate(new Date()))),
-//                randomUUID());
-//
-//        cassandraOps.insert(new DuplicatePatientIgnored(healthId1, healthId4, reasons));
-//        cassandraOps.insert(new DuplicatePatientIgnored(healthId4, healthId1, reasons));
-//
-//        UUID marker = randomUUID();
-//        duplicatePatientRepository.update(healthId1, new Catchment("101112"), asList(
-//                new DuplicatePatient(patient1.getCatchment().getId(), healthId1, healthId3, reasons, TimeUuidUtil.uuidForDate(new Date())),
-//                new DuplicatePatient(patient3.getCatchment().getId(), healthId3, healthId1, reasons, TimeUuidUtil.uuidForDate(new Date())),
-//                new DuplicatePatient(patient1.getCatchment().getId(), healthId1, healthId4, reasons, TimeUuidUtil.uuidForDate(new Date())),
-//                new DuplicatePatient(patient4.getCatchment().getId(), healthId4, healthId1, reasons, TimeUuidUtil.uuidForDate(new Date()))
-//        ), marker);
-//
-//        List<DuplicatePatient> duplicates = findAllDuplicates();
-//        assertTrue(isNotEmpty(duplicates));
-//        assertEquals(2, duplicates.size());
-//        duplicateExist(healthId1, healthId3, patient1.getCatchment().getId(), duplicates.get(0));
-//        duplicateExist(healthId3, healthId1, patient3.getCatchment().getId(), duplicates.get(1));
-//        assertMarker(marker);
-//    }
 }

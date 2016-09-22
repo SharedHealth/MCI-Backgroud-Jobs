@@ -21,6 +21,7 @@ public class TestUtils {
                 Constants.CF_MARKER,
                 Constants.CF_PATIENT,
                 Constants.CF_PATIENT_DUPLICATE,
+                Constants.CF_PATIENT_DUPLICATE_IGNORED,
                 Constants.CF_PATIENT_UPDATE_LOG
         );
     }
