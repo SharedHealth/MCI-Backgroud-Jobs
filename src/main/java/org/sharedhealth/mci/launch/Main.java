@@ -9,7 +9,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
-    private static MCIProperties mciProperties;
     private static final Logger logger = LogManager.getLogger();
 
     private static void createDedupTaskScheduler() {
@@ -20,7 +19,6 @@ public class Main {
 
 
     public static void main(String[] args) {
-        mciProperties = MCIProperties.getInstance();
         logger.info("Starting MCI background jobs");
         createDedupTaskScheduler();
     }

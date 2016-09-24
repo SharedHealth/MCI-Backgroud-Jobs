@@ -32,7 +32,6 @@ ext.libraries = [
         cassandra_driver_core       : "com.datastax.cassandra:cassandra-driver-core:3.0.3",
         cassandra_driver_mapping    : "com.datastax.cassandra:cassandra-driver-mapping:3.0.3",
         cassandra_all               : "org.apache.cassandra:cassandra-all:2.1.0",
-        hector_core                 : "me.prettyprint:hector-core:1.0-5"
 ]
 
 ext.testLibraries = [
