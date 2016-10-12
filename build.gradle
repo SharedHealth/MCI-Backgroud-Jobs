@@ -32,6 +32,8 @@ ext.libraries = [
         cassandra_driver_core       : "com.datastax.cassandra:cassandra-driver-core:3.0.3",
         cassandra_driver_mapping    : "com.datastax.cassandra:cassandra-driver-mapping:3.0.3",
         cassandra_all               : "org.apache.cassandra:cassandra-all:2.1.0",
+        hector_core                 : "me.prettyprint:hector-core:1.0-5",
+        apache_httpclient           : "org.apache.httpcomponents:httpclient:4.3.5",
 ]
 
 ext.testLibraries = [
@@ -41,6 +43,7 @@ ext.testLibraries = [
         mutagen_cassandra           : "com.toddfast.mutagen:mutagen-cassandra-0.4.2-SNAPSHOT",
         cassandra_unit              : "org.cassandraunit:cassandra-unit:2.0.2.2",
         system_rules                : "com.github.stefanbirkner:system-rules:1.16.0",
+        wiremock                    : "com.github.tomakehurst:wiremock:1.58",
 ]
 
 dependencies {
