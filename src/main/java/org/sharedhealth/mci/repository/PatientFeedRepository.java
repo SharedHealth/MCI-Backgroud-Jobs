@@ -8,9 +8,7 @@ import com.datastax.driver.mapping.Result;
 import org.sharedhealth.mci.model.PatientUpdateLog;
 import org.sharedhealth.mci.util.TimeUuidUtil;
 
-import java.util.Calendar;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,7 +24,7 @@ public class PatientFeedRepository {
         this.updateLogMapper = this.mappingManager.mapper(PatientUpdateLog.class);
     }
 
-    public PatientUpdateLog findPatientUpdateLog(UUID marker) {
+    public List<PatientUpdateLog> findPatientUpdateLog(UUID marker, int limit) {
         Select select = select().from(CF_PATIENT_UPDATE_LOG);
 
         if (marker != null) {
@@ -34,11 +32,11 @@ public class PatientFeedRepository {
             select.where(in(YEAR, yearsSince.toArray()));
             select.where(gt(EVENT_ID, marker));
         }
-        String updateLogStmt = select.limit(1).toString();
+        String updateLogStmt = select.limit(limit).toString();
 
         ResultSet resultSet = mappingManager.getSession().execute(updateLogStmt);
         Result<PatientUpdateLog> map = updateLogMapper.map(resultSet);
-        return map.isExhausted() ? null : map.one();
+        return map.isExhausted() ? Collections.EMPTY_LIST : map.all();
     }
 
     private List<Integer> getYearsSince(UUID marker) {

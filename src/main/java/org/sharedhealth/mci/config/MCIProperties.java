@@ -4,24 +4,29 @@ import java.util.Map;
 
 public class MCIProperties {
     private static MCIProperties mciProperties;
-    private String cassandraKeySpace;
-    private String cassandraHost;
-    private String cassandraPort;
 
     private String cassandraUser;
-    private String cassandraPassword;
-    private String cassandraTimeout;
-    private String cassandraVersion;
+    private String cassandraHost;
+    private String cassandraPort;
+    private String cassandraKeySpace;
 
     private String idpBaseUrl;
-    private String idpSignInPath;
-    private String idpClientId;
-    private String idpXAuthToken;
+    private String cassandraTimeout;
+    private String cassandraVersion;
+    private String cassandraPassword;
+
     private String idpEmail;
+    private String idpClientId;
     private String idpPassword;
+    private String idpSignInPath;
+    private String idpXAuthToken;
 
     private String hidServiceBaseUrl;
     private String hidServiceMarkUsedUrlPattern;
+
+    private final String hidMarkUsedBlockSize;
+    private final String hidMarkUsedTaskDelay;
+    private final String hidMarkUsedTaskInitialDelay;
 
     private MCIProperties() {
         Map<String, String> env = System.getenv();
@@ -42,6 +47,9 @@ public class MCIProperties {
 
         this.hidServiceBaseUrl = env.get("HID_SERVICE_BASE_URL");
         this.hidServiceMarkUsedUrlPattern = env.get("HID_SERVICE_MARK_USED_URL");
+        this.hidMarkUsedBlockSize = env.get("HID_MARK_USED_BLOCK_SIZE");
+        this.hidMarkUsedTaskDelay = env.get("HID_MARK_USED_TASK_DELAY");
+        this.hidMarkUsedTaskInitialDelay = env.get("HID_MARK_USED_TASK_INITIAL_DELAY");
     }
 
     public static MCIProperties getInstance() {
@@ -108,5 +116,17 @@ public class MCIProperties {
 
     public String getHidServiceMarkUsedUrlPattern() {
         return hidServiceMarkUsedUrlPattern;
+    }
+
+    public int getHidMarkUsedBlockSize() {
+        return Integer.parseInt(hidMarkUsedBlockSize);
+    }
+
+    public int getHidMarkUsedTaskDelay() {
+        return Integer.parseInt(hidMarkUsedTaskDelay);
+    }
+
+    public int getHidMarkUsedTaskInitialDelay() {
+        return Integer.parseInt(hidMarkUsedTaskInitialDelay);
     }
 }

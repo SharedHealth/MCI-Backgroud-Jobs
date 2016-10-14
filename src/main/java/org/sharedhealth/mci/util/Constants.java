@@ -109,6 +109,7 @@ public class Constants {
     public static final String REASONS = "reasons";
 
     public static final String DUPLICATE_PATIENT_MARKER = "duplicate_patient_marker";
+    public static final String HEALTH_ID_MARK_USED_MARKER = "health_id_mark_used_marker";
 
     //json constants
     public static final String OLD_VALUE = "old_value";

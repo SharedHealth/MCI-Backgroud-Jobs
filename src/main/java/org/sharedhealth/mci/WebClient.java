@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sharedhealth.mci.exception.IdentityUnauthorizedException;
+import org.sharedhealth.mci.model.IdentityStore;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,10 +27,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.sharedhealth.mci.launch.Main.getIdentityStore;
-
 
 public class WebClient {
+    private IdentityStore identityStore;
+
+    public WebClient(IdentityStore identityStore) {
+        this.identityStore = identityStore;
+    }
+
     private final static Logger logger = LogManager.getLogger(WebClient.class);
 
     public String post(String url, Map<String, String> headers, Map<String, String> formEntities) throws IOException {
@@ -70,7 +75,7 @@ public class WebClient {
                     HttpEntity entity = response.getEntity();
                     return entity != null ? parseContentInputString(entity) : null;
                 } else if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    getIdentityStore().clearIdentityToken();
+                    identityStore.clearIdentityToken();
                     throw new IdentityUnauthorizedException("Identity not authorized.");
                 } else {
                     throw new ClientProtocolException("Unexpected Response status.");

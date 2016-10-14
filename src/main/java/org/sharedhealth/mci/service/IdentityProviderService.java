@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sharedhealth.mci.WebClient;
 import org.sharedhealth.mci.config.MCIProperties;
-import org.sharedhealth.mci.exception.IdentityUnauthorizedException;
 import org.sharedhealth.mci.model.IdentityStore;
 import org.sharedhealth.mci.util.StringUtils;
 
@@ -19,19 +18,16 @@ public class IdentityProviderService {
     private final static Logger logger = LogManager.getLogger(IdentityProviderService.class);
 
     private IdentityStore identityStore;
+    private WebClient webClient;
 
-    public IdentityProviderService(IdentityStore identityStore) {
+    public IdentityProviderService(WebClient webClient, IdentityStore identityStore) {
         this.identityStore = identityStore;
+        this.webClient = webClient;
     }
 
     public String getOrCreateIdentityToken(MCIProperties mciProperties) throws IOException {
         if (!identityStore.hasIdentityToken()) {
-            try {
-                identityStore.setIdentityToken(getIdentityTokenFromIdp(mciProperties));
-            } catch (IdentityUnauthorizedException e) {
-                logger.info("Refreshing Identity Token.");
-                identityStore.clearIdentityToken();
-            }
+            identityStore.setIdentityToken(getIdentityTokenFromIdp(mciProperties));
         }
         return identityStore.getIdentityToken();
     }
@@ -43,7 +39,7 @@ public class IdentityProviderService {
         Map<String, String> formEntities = new HashMap<>();
         formEntities.put(EMAIL_KEY, mciProperties.getIdpEmail());
         formEntities.put(PASSWORD_KEY, mciProperties.getIdpPassword());
-        String response = new WebClient().post(getIdpSignInURL(mciProperties), headers, formEntities);
+        String response = webClient.post(getIdpSignInURL(mciProperties), headers, formEntities);
         if (response != null) {
             Map map = new ObjectMapper().readValue(response, Map.class);
             return (String) map.get(ACCESS_TOKEN_KEY);

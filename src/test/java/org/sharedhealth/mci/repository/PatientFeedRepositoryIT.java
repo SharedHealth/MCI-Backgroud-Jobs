@@ -51,15 +51,15 @@ public class PatientFeedRepositoryIT extends BaseIntegrationTest {
         updateLogMapper.save(updateLog2);
         updateLogMapper.save(updateLog3);
 
-        PatientUpdateLog log = feedRepository.findPatientUpdateLog(null);
+        PatientUpdateLog log = feedRepository.findPatientUpdateLog(null, 1).get(0);
         assertEquals(log.getEventId(), updateLog1.getEventId());
         assertEquals(log.getHealthId(), updateLog1.getHealthId());
 
-        log = feedRepository.findPatientUpdateLog(eventId1);
+        log = feedRepository.findPatientUpdateLog(eventId1, 1).get(0);
         assertEquals(log.getEventId(), updateLog2.getEventId());
         assertEquals(log.getHealthId(), updateLog2.getHealthId());
 
-        log = feedRepository.findPatientUpdateLog(eventId2);
+        log = feedRepository.findPatientUpdateLog(eventId2, 1).get(0);
         assertEquals(log.getEventId(), updateLog3.getEventId());
         assertEquals(log.getHealthId(), updateLog3.getHealthId());
     }
