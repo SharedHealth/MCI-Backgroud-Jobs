@@ -7,6 +7,7 @@ import org.sharedhealth.mci.WebClient;
 import org.sharedhealth.mci.config.MCICassandraConfig;
 import org.sharedhealth.mci.config.MCIProperties;
 import org.sharedhealth.mci.model.IdentityStore;
+import org.sharedhealth.mci.repository.FailedEventRepository;
 import org.sharedhealth.mci.repository.MarkerRepository;
 import org.sharedhealth.mci.repository.PatientFeedRepository;
 import org.sharedhealth.mci.service.HealthIdMarkUsedService;
@@ -24,7 +25,10 @@ public class Main {
 
     private static void createHealthIdMarkUsedTaskScheduler() {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> healthIdMarkUsedTask.markUsedHealthIds(),
+        scheduler.scheduleAtFixedRate(() -> {
+                    healthIdMarkUsedTask.process();
+                    healthIdMarkUsedTask.processFailedEvents();
+                },
                 mciProperties.getHidMarkUsedTaskInitialDelay(), mciProperties.getHidMarkUsedTaskDelay(),
                 TimeUnit.MILLISECONDS);
     }
@@ -36,16 +40,16 @@ public class Main {
         mciProperties = MCIProperties.getInstance();
         IdentityStore identityStore = new IdentityStore();
         WebClient webClient = new WebClient(identityStore);
-        
+        MappingManager mappingManager = MCICassandraConfig.getInstance().getMappingManager();
+
         IdentityProviderService identityProviderService = new IdentityProviderService(webClient, identityStore);
         HealthIdMarkUsedService markUsedService = new HealthIdMarkUsedService(identityProviderService, webClient, mciProperties);
-        
-        MappingManager mappingManager = MCICassandraConfig.getInstance().getMappingManager();
-        PatientFeedRepository feedRepository = new PatientFeedRepository(mappingManager);
-        MarkerRepository markerRepository = new MarkerRepository(mappingManager);
-        
-        healthIdMarkUsedTask = new HealthIdMarkUsedTask(markUsedService, feedRepository, markerRepository, mciProperties);
 
+        MarkerRepository markerRepository = new MarkerRepository(mappingManager);
+        PatientFeedRepository feedRepository = new PatientFeedRepository(mappingManager);
+        FailedEventRepository failedEventRepository = new FailedEventRepository(mappingManager);
+
+        healthIdMarkUsedTask = new HealthIdMarkUsedTask(markUsedService, feedRepository, markerRepository, failedEventRepository, mciProperties);
         createHealthIdMarkUsedTaskScheduler();
     }
 

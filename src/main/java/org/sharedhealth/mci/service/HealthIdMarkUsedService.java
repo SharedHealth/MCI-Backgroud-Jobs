@@ -1,7 +1,5 @@
 package org.sharedhealth.mci.service;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sharedhealth.mci.WebClient;
 import org.sharedhealth.mci.config.MCIProperties;
 
@@ -15,8 +13,6 @@ import static org.sharedhealth.mci.util.StringUtils.ensureSuffix;
 import static org.sharedhealth.mci.util.StringUtils.removePrefix;
 
 public class HealthIdMarkUsedService {
-    private static final Logger logger = LogManager.getLogger(HealthIdMarkUsedService.class);
-
     private MCIProperties mciProperties;
     private IdentityProviderService identityProviderService;
     private WebClient webClient;
@@ -29,17 +25,11 @@ public class HealthIdMarkUsedService {
         this.webClient = webClient;
     }
 
-    public void markUsed(String healthId, UUID usedAt) {
-        try {
-            logger.info("Marking HealthId {} as used", healthId);
-            Map<String, String> hidServiceHeaders = getHIDServiceHeaders();
-            Map<String, String> data = new HashMap<>();
-            data.put(USED_AT_KEY, usedAt.toString());
-            webClient.put(getMarkUsedUrl(healthId), hidServiceHeaders, data);
-        } catch (IOException e) {
-            //put into failed events
-            logger.error("Failed to mark HealthId {} as Used", healthId, e);
-        }
+    public void markUsed(String healthId, UUID usedAt) throws IOException {
+        Map<String, String> hidServiceHeaders = getHIDServiceHeaders();
+        Map<String, String> data = new HashMap<>();
+        data.put(USED_AT_KEY, usedAt.toString());
+        webClient.put(getMarkUsedUrl(healthId), hidServiceHeaders, data);
     }
 
     private Map<String, String> getHIDServiceHeaders() throws IOException {

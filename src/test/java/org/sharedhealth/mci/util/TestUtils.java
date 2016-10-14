@@ -19,7 +19,8 @@ public class TestUtils {
     private static List<String> getAllColumnFamilies() {
         return asList(
                 Constants.CF_MARKER,
-                Constants.CF_PATIENT_UPDATE_LOG
+                Constants.CF_PATIENT_UPDATE_LOG,
+                Constants.CF_FAILED_EVENTS
         );
     }
 

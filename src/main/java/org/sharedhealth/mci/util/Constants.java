@@ -10,6 +10,7 @@ public class Constants {
     public static final String CF_MARKER = "marker";
     public static final String CF_PATIENT_DUPLICATE = "patient_duplicate";
     public static final String CF_PATIENT_DUPLICATE_IGNORED = "patient_duplicate_ignored";
+    public static final String CF_FAILED_EVENTS = "failed_events";
 
     public static final String HEALTH_ID = "health_id";
     public static final String ASSIGNED_BY = "assigned_by";
@@ -103,6 +104,14 @@ public class Constants {
     public static final String EVENT_TYPE = "event_type";
     public static final String EVENT_TYPE_CREATED = "created";
     public static final String EVENT_TYPE_UPDATED = "updated";
+
+    public static final String FAILURE_TYPE = "failure_type";
+    public static final String ERROR_MESSAGE = "error_message";
+    public static final String FAILED_AT = "failed_at";
+    public static final String RETRIES = "retries";
+
+    public static final String FAILURE_TYPE_HEALTH_MARK_USED = "health_id_mark_used_failure";
+
 
     public static final String HEALTH_ID1 = "health_id1";
     public static final String HEALTH_ID2 = "health_id2";

@@ -4,11 +4,12 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
-import com.datastax.driver.mapping.Result;
 import org.sharedhealth.mci.model.PatientUpdateLog;
 import org.sharedhealth.mci.util.TimeUuidUtil;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -35,8 +36,7 @@ public class PatientFeedRepository {
         String updateLogStmt = select.limit(limit).toString();
 
         ResultSet resultSet = mappingManager.getSession().execute(updateLogStmt);
-        Result<PatientUpdateLog> map = updateLogMapper.map(resultSet);
-        return map.isExhausted() ? Collections.EMPTY_LIST : map.all();
+        return updateLogMapper.map(resultSet).all();
     }
 
     private List<Integer> getYearsSince(UUID marker) {
@@ -52,6 +52,16 @@ public class PatientFeedRepository {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(TimeUuidUtil.getTimeFromUUID(uuid));
         return cal.get(Calendar.YEAR);
+    }
+
+    public PatientUpdateLog findPatientUpdateLogByEventId(UUID eventId) {
+        Select select = select().from(CF_PATIENT_UPDATE_LOG);
+        List<Integer> years = getYearsSince(eventId);
+        select.where(in(YEAR, years.toArray()));
+        select.where(eq(EVENT_ID, eventId));
+        ResultSet resultSet = mappingManager.getSession().execute(select);
+        List<PatientUpdateLog> logs = updateLogMapper.map(resultSet).all();
+        return !logs.isEmpty() ? logs.get(0) : null;
     }
 
 }

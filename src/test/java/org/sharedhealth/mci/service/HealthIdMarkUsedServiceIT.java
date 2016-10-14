@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.sharedhealth.mci.BaseIntegrationTest;
 import org.sharedhealth.mci.WebClient;
 import org.sharedhealth.mci.config.MCIProperties;
+import org.sharedhealth.mci.exception.IdentityUnauthorizedException;
 import org.sharedhealth.mci.model.IdentityStore;
 import org.sharedhealth.mci.util.TestUtils;
 import org.sharedhealth.mci.util.TimeUuidUtil;
@@ -62,7 +63,7 @@ public class HealthIdMarkUsedServiceIT extends BaseIntegrationTest {
         assertTrue(identityStore.hasIdentityToken());
     }
 
-    @Test
+    @Test(expected = IdentityUnauthorizedException.class)
     public void shouldClearIdentityTokenOnUnauthorized() throws Exception {
         UUID token = UUID.randomUUID();
         setUpIdentityStub(token);

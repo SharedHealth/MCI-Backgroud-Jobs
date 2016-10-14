@@ -13,9 +13,11 @@ import org.sharedhealth.mci.BaseIntegrationTest;
 import org.sharedhealth.mci.WebClient;
 import org.sharedhealth.mci.config.MCICassandraConfig;
 import org.sharedhealth.mci.config.MCIProperties;
+import org.sharedhealth.mci.model.FailedEvent;
 import org.sharedhealth.mci.model.IdentityStore;
 import org.sharedhealth.mci.model.Marker;
 import org.sharedhealth.mci.model.PatientUpdateLog;
+import org.sharedhealth.mci.repository.FailedEventRepository;
 import org.sharedhealth.mci.repository.MarkerRepository;
 import org.sharedhealth.mci.repository.PatientFeedRepository;
 import org.sharedhealth.mci.service.HealthIdMarkUsedService;
@@ -24,12 +26,14 @@ import org.sharedhealth.mci.util.TestUtils;
 import org.sharedhealth.mci.util.TimeUuidUtil;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sharedhealth.mci.util.Constants.*;
 import static org.sharedhealth.mci.util.HttpUtil.*;
 
@@ -39,6 +43,7 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
 
     private Mapper<PatientUpdateLog> patientUpdateLogMapper;
     private Mapper<Marker> markerMapper;
+    private Mapper<FailedEvent> failedEventMapper;
     private MCIProperties mciProperties;
     private MappingManager mappingManager;
     private HealthIdMarkUsedTask healthIdMarkUsedTask;
@@ -56,13 +61,15 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         mappingManager = MCICassandraConfig.getInstance().getMappingManager();
         patientUpdateLogMapper = mappingManager.mapper(PatientUpdateLog.class);
         markerMapper = mappingManager.mapper(Marker.class);
+        failedEventMapper = mappingManager.mapper(FailedEvent.class);
         mciProperties = MCIProperties.getInstance();
 
         IdentityStore identityStore = new IdentityStore();
         WebClient webClient = new WebClient(identityStore);
         IdentityProviderService identityProviderService = new IdentityProviderService(webClient, identityStore);
         HealthIdMarkUsedService markUsedService = new HealthIdMarkUsedService(identityProviderService, webClient, mciProperties);
-        healthIdMarkUsedTask = new HealthIdMarkUsedTask(markUsedService, new PatientFeedRepository(mappingManager), new MarkerRepository(mappingManager), mciProperties);
+        healthIdMarkUsedTask = new HealthIdMarkUsedTask(markUsedService, new PatientFeedRepository(mappingManager),
+                new MarkerRepository(mappingManager), new FailedEventRepository(mappingManager), mciProperties);
     }
 
     @Test
@@ -75,7 +82,7 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         setUpIdentityStub(token);
         setupMarkUsedStub(token);
 
-        healthIdMarkUsedTask.markUsedHealthIds();
+        healthIdMarkUsedTask.process();
 
         verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
         verify(1, putRequestedFor(urlMatching(HID_MARK_USED_URL + "HID"))
@@ -100,7 +107,7 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         setUpIdentityStub(token);
         setupMarkUsedStub(token);
 
-        healthIdMarkUsedTask.markUsedHealthIds();
+        healthIdMarkUsedTask.process();
 
         verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
         verify(1, putRequestedFor(urlMatching(HID_MARK_USED_URL + "HID2"))
@@ -129,7 +136,7 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         setUpIdentityStub(token);
         setupMarkUsedStub(token);
 
-        healthIdMarkUsedTask.markUsedHealthIds();
+        healthIdMarkUsedTask.process();
 
         verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
         verify(1, putRequestedFor(urlMatching(HID_MARK_USED_URL + "HID1"))
@@ -166,7 +173,7 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         setUpIdentityStub(token);
         setupMarkUsedStub(token);
 
-        healthIdMarkUsedTask.markUsedHealthIds();
+        healthIdMarkUsedTask.process();
 
         verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
         verify(1, putRequestedFor(urlMatching(HID_MARK_USED_URL + "HID1"))
@@ -176,6 +183,88 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         verify(1, putRequestedFor(urlMatching(HID_MARK_USED_URL + "HID3"))
                 .withRequestBody(equalToJson("{used_at:" + eventId4.toString() + "}")));
         assertMarker(eventId5);
+    }
+
+    @Test
+    public void shouldPutIntoFailedEventsIfFails() throws Exception {
+        UUID eventId = TimeUuidUtil.uuidForDate(new Date());
+        PatientUpdateLog patientUpdateLog = buildPatientUpdateLog(eventId, EVENT_TYPE_CREATED, "HID");
+        patientUpdateLogMapper.save(patientUpdateLog);
+
+        healthIdMarkUsedTask.process();
+
+        assertFailedEvent(eventId, 0);
+        assertMarker(eventId);
+        verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
+        verify(0, putRequestedFor(urlMatching(HID_MARK_USED_URL)));
+    }
+
+    @Test
+    public void shouldProcessFailedEventsAndDelete() throws Exception {
+        UUID eventId = TimeUuidUtil.uuidForDate(new Date());
+        failedEventMapper.save(new FailedEvent(FAILURE_TYPE_HEALTH_MARK_USED, eventId, "ERROR"));
+        patientUpdateLogMapper.save(buildPatientUpdateLog(eventId, EVENT_TYPE_CREATED, "HID"));
+        UUID token = UUID.randomUUID();
+        setUpIdentityStub(token);
+        setupMarkUsedStub(token);
+
+        healthIdMarkUsedTask.processFailedEvents();
+
+        assertTrue(mappingManager.getSession().execute(select().from(CF_FAILED_EVENTS)).isExhausted());
+        verify(1, postRequestedFor(urlMatching(SIGN_IN_URL)));
+        verify(0, putRequestedFor(urlMatching(HID_MARK_USED_URL)));
+    }
+
+    @Test
+    public void shouldIncreaseRetriesForFailedEventIfFailsWhileRetry() throws Exception {
+        UUID eventId = TimeUuidUtil.uuidForDate(new Date());
+        failedEventMapper.save(new FailedEvent(FAILURE_TYPE_HEALTH_MARK_USED, eventId, "ERROR"));
+        patientUpdateLogMapper.save(buildPatientUpdateLog(eventId, EVENT_TYPE_CREATED, "HID"));
+
+        healthIdMarkUsedTask.processFailedEvents();
+        healthIdMarkUsedTask.processFailedEvents();
+        healthIdMarkUsedTask.processFailedEvents();
+
+        assertFailedEvent(eventId, 3);
+        verify(3, postRequestedFor(urlMatching(SIGN_IN_URL)));
+        verify(0, putRequestedFor(urlMatching(HID_MARK_USED_URL)));
+    }
+
+    @Test
+    public void shouldNotRetryFailedEventIfItHasReachedMaxRetryLimit() throws Exception {
+        UUID eventId = TimeUuidUtil.uuidForDate(new Date());
+        failedEventMapper.save(new FailedEvent(FAILURE_TYPE_HEALTH_MARK_USED, eventId, "ERROR", mciProperties.getFailedEventRetryLimit()));
+        patientUpdateLogMapper.save(buildPatientUpdateLog(eventId, EVENT_TYPE_CREATED, "HID"));
+
+        healthIdMarkUsedTask.processFailedEvents();
+        healthIdMarkUsedTask.processFailedEvents();
+        healthIdMarkUsedTask.processFailedEvents();
+
+        assertFailedEvent(eventId, mciProperties.getMaxFailedEventLimit());
+        verify(0, postRequestedFor(urlMatching(SIGN_IN_URL)));
+        verify(0, putRequestedFor(urlMatching(HID_MARK_USED_URL)));
+    }
+
+    @Test
+    public void shouldNotProcessNewEventsIfFailedEventsReachToMaxLimit() throws Exception {
+        for (int i = 0; i < mciProperties.getMaxFailedEventLimit(); i++) {
+            failedEventMapper.save(new FailedEvent(FAILURE_TYPE_HEALTH_MARK_USED, TimeUuidUtil.uuidForDate(new Date()), "ERROR"));
+        }
+
+        healthIdMarkUsedTask.process();
+
+        verify(0, postRequestedFor(urlMatching(SIGN_IN_URL)));
+        verify(0, putRequestedFor(urlMatching(HID_MARK_USED_URL)));
+    }
+
+    private void assertFailedEvent(UUID eventId, int retriesExpected) {
+        ResultSet resultSet = mappingManager.getSession().execute(select().from(CF_FAILED_EVENTS));
+        List<FailedEvent> failedEvents = failedEventMapper.map(resultSet).all();
+        assertEquals(1, failedEvents.size());
+        FailedEvent failedEvent = failedEvents.get(0);
+        assertEquals(FAILURE_TYPE_HEALTH_MARK_USED, failedEvent.getFailureType());
+        assertEquals(eventId, failedEvent.getEventId());
+        assertEquals(retriesExpected, failedEvent.getRetries());
     }
 
     private void assertMarker(UUID eventId) {
