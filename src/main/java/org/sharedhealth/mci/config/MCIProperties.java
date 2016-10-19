@@ -30,7 +30,6 @@ public class MCIProperties {
 
     private final String maxFailedEventLimit;
     private final String failedEventRetryLimit;
-    private final String failedEventProcessBlockSize;
 
     private MCIProperties() {
         Map<String, String> env = System.getenv();
@@ -57,7 +56,6 @@ public class MCIProperties {
 
         this.maxFailedEventLimit = env.get("MAX_FAILED_EVENTS_LIMIT");
         this.failedEventRetryLimit = env.get("FAILED_EVENT_RETRY_LIMIT");
-        this.failedEventProcessBlockSize = env.get("FAILED_EVENTS_PROCESS_BLOCK_SIZE");
     }
 
     public static MCIProperties getInstance() {
@@ -142,7 +140,7 @@ public class MCIProperties {
         return Integer.parseInt(maxFailedEventLimit);
     }
 
-    public int getFailedEventRetryLimit() {return Integer.parseInt(failedEventRetryLimit);}
-
-    public int getFailedEventProcessBlockSize() {return Integer.parseInt(failedEventProcessBlockSize);}
+    public int getFailedEventRetryLimit() {
+        return Integer.parseInt(failedEventRetryLimit);
+    }
 }

@@ -66,7 +66,7 @@ public class HealthIdMarkUsedTask {
 
     public void processFailedEvents() {
         List<FailedEvent> failedEvents = failedEventRepository.getFailedEvents(FAILURE_TYPE_HEALTH_MARK_USED,
-                mciProperties.getFailedEventProcessBlockSize());
+                mciProperties.getMaxFailedEventLimit());
         for (FailedEvent failedEvent : failedEvents) {
             if (failedEvent.getRetries() >= mciProperties.getFailedEventRetryLimit()) {
                 logger.warn("Cannot process failed event with event-id {} because it has reached the retry limit", failedEvent.getEventId());
