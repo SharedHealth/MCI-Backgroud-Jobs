@@ -25,6 +25,7 @@ import org.sharedhealth.mci.service.IdentityProviderService;
 import org.sharedhealth.mci.util.TestUtils;
 import org.sharedhealth.mci.util.TimeUuidUtil;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -277,7 +278,9 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
         PatientUpdateLog patientUpdateLog = new PatientUpdateLog();
         patientUpdateLog.setEventId(eventId);
         patientUpdateLog.setEventType(eventType);
-        patientUpdateLog.setYear(2016);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        patientUpdateLog.setYear(calendar.get(Calendar.YEAR));
         patientUpdateLog.setHealthId(hid);
         return patientUpdateLog;
     }
@@ -290,8 +293,8 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
                 .withHeader(CLIENT_ID_KEY, equalTo(mciProperties.getIdpClientId()))
                 .withRequestBody(containing("password=password&email=shrSysAdmin%40gmail.com"))
                 .willReturn(aResponse()
-                        .withStatus(HttpStatus.SC_OK)
-                        .withBody(idpResponse)
+                                .withStatus(HttpStatus.SC_OK)
+                                .withBody(idpResponse)
                 ));
     }
 
@@ -301,8 +304,8 @@ public class HealthIdMarkUsedTaskIT extends BaseIntegrationTest {
                 .withHeader(CLIENT_ID_KEY, equalTo(mciProperties.getIdpClientId()))
                 .withHeader(FROM_KEY, equalTo(mciProperties.getIdpEmail()))
                 .willReturn(aResponse()
-                        .withStatus(HttpStatus.SC_OK)
-                        .withBody("Accepted")
+                                .withStatus(HttpStatus.SC_OK)
+                                .withBody("Accepted")
                 ));
     }
 }
